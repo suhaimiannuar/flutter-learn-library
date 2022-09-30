@@ -1,5 +1,16 @@
-This app only meant to test out flutter library test for future development. It shall separate the code in different library so it will be easier for future reference. The installed library shall be noted here so that we can know what went wrong if it is not compatible during your testing; It may due to library incompatibility.
+# flutterapp
 
-flutter doctor
-[√] Flutter (Channel stable, 3.3.2, on Microsoft Windows [Version 10.0.19044.2006], locale en-MY)
-[√] Android toolchain - develop for Android devices (Android SDK version 32.0.0)
+A new Flutter project.
+
+## Getting Started
+
+This project is a starting point for a Flutter application.
+
+A few resources to get you started if this is your first Flutter project:
+
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'http.dart';
+import 'map/map.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,6 +33,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
   void _incrementCounter() {
+    requestToServer("Life");
     setState(() {
       _counter++;
     });
@@ -53,6 +56,15 @@ class _MyHomePageState extends State<MyHomePage> {
               '$_counter',
               style: Theme.of(context).textTheme.headline4,
             ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MapApp()),
+                );
+              },
+              child: const Text('Click Me'),
+            )
           ],
         ),
       ),
