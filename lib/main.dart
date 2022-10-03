@@ -4,9 +4,6 @@ import 'map/map.dart';
 import 'bluetooth.dart';
 import 'clock.dart';
 
-
-List<String> entries = <String>['A', 'B', 'C'];
-
 void main() {
   runApp(const MyApp());
 }
@@ -17,7 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Hehe',
+      title: 'Flutter Example',
       theme: ThemeData(
         primarySwatch: Colors.amber,
       ),
@@ -78,6 +75,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 );
               },
               child: const Text('Goto Clock'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BluetoothApp()),
+                );
+              },
+              child: const Text('Goto BLE'),
             ),
           ],
         ),
