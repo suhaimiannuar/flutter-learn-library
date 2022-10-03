@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutterapp/serial.dart';
 import 'http.dart';
 import 'map/map.dart';
 import 'bluetooth.dart';
@@ -84,6 +85,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 );
               },
               child: const Text('Goto BLE'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SerialApp()),
+                );
+              },
+              child: const Text('Goto Serial'),
             ),
           ],
         ),
