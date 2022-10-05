@@ -1,6 +1,7 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
-
 
 class SerialApp extends StatelessWidget {
   const SerialApp({Key? key}) : super(key: key);
@@ -12,11 +13,84 @@ class SerialApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.purple,
       ),
-      home: const SerialPage(),
+      home: const SerialPage2(), //CHANGE HERE: SerialPage() or SerialPage2()
     );
   }
 }
 
+class SerialPage2 extends StatefulWidget {
+  const SerialPage2({Key? key}) : super(key: key);
+
+  @override
+  State<SerialPage2> createState() => _SerialPage2State();
+}
+
+class _SerialPage2State extends State<SerialPage2> {
+
+  void _reset() {
+    setState(() {
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<String> availablePort = SerialPort.availablePorts;
+    var serialOut = "Test";
+
+    print(availablePort);
+    SerialPort port1 = SerialPort('COM4');
+
+    port1.openReadWrite();
+    var config = SerialPortConfig();
+    config.baudRate = 115200;
+    port1.config = config;
+
+    try{
+      print('Written Bytes: ${port1.write(_stringToUint8List('Hello'))}');
+      SerialPortReader reader = SerialPortReader(port1);
+      Stream<String> upcomingData = reader.stream.map((data){
+        return String.fromCharCodes(data);
+      });
+      upcomingData.listen((data) {
+        print("Read data: $data");
+
+        if(data.indexOf("ECAIQ,VER*32") >= 0){
+          print("Found ecaiq ver");
+          port1.write(_stringToUint8List("\$ANVER,4,1,3,AN,AMC,995339998,A8K300145,,,*3D"));
+        }
+      });
+    }on SerialPortError catch (err, _){
+      print(SerialPort.lastError);
+      port1.close();
+    }
+
+    return MaterialApp(
+      home: Scaffold(
+        floatingActionButton: FloatingActionButton(
+          onPressed: _reset,
+          tooltip: 'Refresh',
+          child: const Icon(Icons.refresh),
+        ),
+        appBar: AppBar(
+          title: const Text("Serial Communication"),
+        ),
+        body: Scrollbar(
+          child: Column(
+            children:  [
+              Text(serialOut)
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Uint8List _stringToUint8List(String s) {
+    List<int> list = s.codeUnits;
+    Uint8List bytes = Uint8List.fromList(list);
+    return bytes;
+  }
+}
 
 
 
@@ -44,6 +118,8 @@ extension IntToString on int {
     }
   }
 }
+
+
 
 class _SerialPageState extends State<SerialPage> {
   var availablePorts = [];
@@ -103,7 +179,7 @@ class CardListTile extends StatelessWidget {
   final String name;
   final String? value;
 
-  CardListTile(this.name, this.value);
+  const CardListTile(this.name, this.value);
 
   @override
   Widget build(BuildContext context) {

@@ -1,12 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutterapp/provider/counter_provider.dart';
 import 'package:flutterapp/serial.dart';
+import 'package:provider/provider.dart';
 import 'http.dart';
 import 'map/map.dart';
 import 'bluetooth.dart';
 import 'clock.dart';
+import 'provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(providers: [
+      ChangeNotifierProvider(create: (_) => Counter())
+    ],
+    child:  const MyApp(),
+    )
+  );
+  // runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -94,6 +104,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 );
               },
               child: const Text('Goto Serial'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProviderPage()),
+                );
+              },
+              child: const Text('Goto State Management'),
             ),
           ],
         ),
