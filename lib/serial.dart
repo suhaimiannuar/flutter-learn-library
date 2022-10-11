@@ -13,10 +13,13 @@ class SerialPortNow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     SerialPort port = SerialPort(context.watch<SerialSet>().serialNow);
-    return Column(
-      children: [
-        Text(port.description.toString()),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Text(port.description.toString()),
+          Text(context.watch<SerialSet>().serialOut)
+        ],
+      ),
     );
   }
 }
@@ -29,53 +32,14 @@ class SerialSet with ChangeNotifier{
   String _serialNow = "";
   String get serialNow => _serialNow;
 
-  List<String> _baudOption = [];  //Initialize
-  List<String> get baudOption => _baudOption;
-
-  String _baudRate = "";
-  String get baudRate => _baudRate;
-
   String _serialOut = "";
   String get serialOut => _serialOut;
 
   void serialPrint(String x){
     _serialOut = x + _serialOut;
-    if (kDebugMode) {
-      print(_serialOut);
-    }
     notifyListeners();
   }
 
-  void initBaudRate(){
-    _baudOption = ['9600','115200','921600'];
-    _baudRate = "115200";
-
-    notifyListeners();
-  }
-
-  void setPort(String x) {  //change port here
-    if(_serialNow.isNotEmpty){
-      if(_serialNow != x){
-        SerialPort port = SerialPort(_serialNow);
-        port.close();
-        _serialNow = x;
-        notifyListeners();
-      }
-    }
-
-
-
-  }
-
-  void setBaud(String x) { //change baud rate here
-    _baudRate = x;
-    if (kDebugMode) {
-      print(baudRate);
-      print(serialNow);
-    }
-
-    notifyListeners();
-  }
 
   void listPort(){
     if(Platform.isWindows || Platform.isLinux || Platform.isMacOS){
@@ -83,9 +47,13 @@ class SerialSet with ChangeNotifier{
       if(_serial.isNotEmpty){
         for(String x in _serial){
           SerialPort port = SerialPort(x);
+          if(port.description.toString().contains("USB-SERIAL CH340")){
+            _serialNow = port.name!;
+            print("found ya");
+            break;
+          }
           port.close();
         }
-        _serialNow = _serial.first;
       }
 
       if (kDebugMode) {
@@ -126,20 +94,20 @@ class _RefreshPageState extends State<RefreshPage> {
     super.initState();
     Future.delayed(const Duration(milliseconds: 10), () {           //delay untuk allow everything is constructed. then baru kita reassign value.
       context.read<SerialSet>().listPort();
-      context.read<SerialSet>().initBaudRate();
       print("Init state X");
       if(Provider.of<SerialSet>(context, listen: false).serialNow.isNotEmpty){
         SerialPort port = SerialPort(Provider.of<SerialSet>(context, listen: false).serialNow);
 
         port.openReadWrite();
         var config = SerialPortConfig();
-        config.baudRate = int.parse(Provider.of<SerialSet>(context, listen: false).baudRate);
+        config.baudRate = 115200;
         port.config = config;
 
         try{
           SerialPortReader reader = SerialPortReader(port);
           reader.stream.listen((data) {
-            print('received : ${String.fromCharCodes(data)}');
+            // print('received : ${String.fromCharCodes(data)}');
+            context.read<SerialSet>().serialPrint(String.fromCharCodes(data));
           });
         }on SerialPortError catch (err, _){
           if(port.isOpen){
@@ -175,71 +143,54 @@ class _RefreshPageState extends State<RefreshPage> {
         child: const Icon(Icons.refresh),
       ),
       body: Center(
-        child: Column(
+        child: ListView(
+          shrinkWrap: true,
           children: [
-            FutureBuilder(
-                future: getItem,
-                builder: (BuildContext context, AsyncSnapshot<List<String>> snapshot){
-                  List<Widget> item;
-                  if(snapshot.hasData){
-                    item = <Widget>[
-                      DropdownButton<String>(
-                          value: context.watch<SerialSet>().serialNow,
-                          items: context.watch<SerialSet>().serial.map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            context.read<SerialSet>().setPort(value!);
-                          }),
-                      DropdownButton<String>(
-                          value: context.watch<SerialSet>().baudRate,
-                          items: context.watch<SerialSet>().baudOption.map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            context.read<SerialSet>().setBaud(value!);
-                          }),
-                    ];
-                  }
-                  else if(snapshot.hasError){
-                    item = <Widget>[
-                      const Icon(
-                        Icons.error_outline,
-                        color: Colors.red,
-                        size: 60,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: Text('Error: ${snapshot.error}'),
-                      ),
-                    ];
-                  }
-                  else{
-                    item = const <Widget>[
-                      SizedBox(
-                        width: 50,
-                        height: 50,
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 16),
-                        child: Text('Awaiting result...'),
-                      )
-                    ];
-                  }
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: item,
-                    ),
-                  );
-                }),
-            const SerialPortNow(),
+            Column(
+              children: [
+                FutureBuilder(
+                    future: getItem,
+                    builder: (BuildContext context, AsyncSnapshot<List<String>> snapshot){
+                      List<Widget> item;
+                      if(snapshot.hasData){
+                        item = <Widget>[
+                        ];
+                      }
+                      else if(snapshot.hasError){
+                        item = <Widget>[
+                          const Icon(
+                            Icons.error_outline,
+                            color: Colors.red,
+                            size: 60,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: Text('Error: ${snapshot.error}'),
+                          ),
+                        ];
+                      }
+                      else{
+                        item = const <Widget>[
+                          SizedBox(
+                            width: 50,
+                            height: 50,
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: 16),
+                            child: Text('Awaiting result...'),
+                          )
+                        ];
+                      }
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: item,
+                        ),
+                      );
+                    }),
+                const SerialPortNow(),
+              ],
+            )
           ],
         ),
       ),
