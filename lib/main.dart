@@ -11,7 +11,8 @@ import 'provider.dart';
 void main() {
   runApp(
     MultiProvider(providers: [
-      ChangeNotifierProvider(create: (_) => Counter())
+      ChangeNotifierProvider(create: (_) => Counter()),
+      ChangeNotifierProvider(create: (_) => SerialSet()),
     ],
     child:  const MyApp(),
     )

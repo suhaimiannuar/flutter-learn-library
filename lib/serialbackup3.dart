@@ -6,6 +6,22 @@ import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'dart:io' show Platform, exit;
 import 'package:provider/provider.dart';
 
+extension IntToString on int {
+  String toHex() => '0x${toRadixString(16)}';
+  String toPadded([int width = 3]) => toString().padLeft(width, '0');
+  String toTransport() {
+    switch (this) {
+      case SerialPortTransport.usb:
+        return 'USB';
+      case SerialPortTransport.bluetooth:
+        return 'Bluetooth';
+      case SerialPortTransport.native:
+        return 'Native';
+      default:
+        return 'Unknown';
+    }
+  }
+}
 
 class SerialPortNow extends StatelessWidget {
   const SerialPortNow({Key? key}) : super(key: key);
@@ -23,17 +39,8 @@ class SerialPortNow extends StatelessWidget {
 
 
 class SerialSet with ChangeNotifier{
-  List<String> _serial = [];  //Initialize
-  List<String> get serial => _serial;
-
   String _serialNow = "";
   String get serialNow => _serialNow;
-
-  List<String> _baudOption = [];  //Initialize
-  List<String> get baudOption => _baudOption;
-
-  String _baudRate = "";
-  String get baudRate => _baudRate;
 
   String _serialOut = "";
   String get serialOut => _serialOut;
@@ -46,53 +53,24 @@ class SerialSet with ChangeNotifier{
     notifyListeners();
   }
 
-  void initBaudRate(){
-    _baudOption = ['9600','115200','921600'];
-    _baudRate = "115200";
 
-    notifyListeners();
-  }
-
-  void setPort(String x) {  //change port here
-    if(_serialNow.isNotEmpty){
-      if(_serialNow != x){
-        SerialPort port = SerialPort(_serialNow);
-        port.close();
-        _serialNow = x;
-        notifyListeners();
-      }
-    }
-
-
-
-  }
-
-  void setBaud(String x) { //change baud rate here
-    _baudRate = x;
-    if (kDebugMode) {
-      print(baudRate);
-      print(serialNow);
-    }
-
-    notifyListeners();
-  }
 
   void listPort(){
     if(Platform.isWindows || Platform.isLinux || Platform.isMacOS){
-      _serial = SerialPort.availablePorts;
-      if(_serial.isNotEmpty){
-        for(String x in _serial){
+      if(SerialPort.availablePorts.isNotEmpty){
+        for(String x in SerialPort.availablePorts){
           SerialPort port = SerialPort(x);
-          port.close();
-        }
-        _serialNow = _serial.first;
-      }
+          debugPrint(port.description);
 
-      if (kDebugMode) {
-        print("_serialNow: $_serialNow");
+          if(port.description.toString().contains("USB-SERIAL CH340")){
+            _serialNow = x;
+            debugPrint("Decided: port at $x");
+            notifyListeners();
+            break;
+          }
+        }
       }
     }
-    notifyListeners();
   }
 }
 
@@ -126,120 +104,44 @@ class _RefreshPageState extends State<RefreshPage> {
     super.initState();
     Future.delayed(const Duration(milliseconds: 10), () {           //delay untuk allow everything is constructed. then baru kita reassign value.
       context.read<SerialSet>().listPort();
-      context.read<SerialSet>().initBaudRate();
       print("Init state X");
       if(Provider.of<SerialSet>(context, listen: false).serialNow.isNotEmpty){
+        print("Im in 1");
         SerialPort port = SerialPort(Provider.of<SerialSet>(context, listen: false).serialNow);
-
         port.openReadWrite();
         var config = SerialPortConfig();
-        config.baudRate = int.parse(Provider.of<SerialSet>(context, listen: false).baudRate);
+        config.baudRate = 115200;
         port.config = config;
 
-        try{
-          SerialPortReader reader = SerialPortReader(port);
-          reader.stream.listen((data) {
-            print('received : ${String.fromCharCodes(data)}');
-          });
-        }on SerialPortError catch (err, _){
-          if(port.isOpen){
-            print(SerialPort.lastError);
-            port.close();
-          }
-        }
       }
+
     });
   }
 
-  // Uint8List _stringToUint8List(String s) {
-  //   List<int> list = s.codeUnits;
-  //   Uint8List bytes = Uint8List.fromList(list);
-  //   return bytes;
-  // }
+  Uint8List _stringToUint8List(String s) {
+    List<int> list = s.codeUnits;
+    Uint8List bytes = Uint8List.fromList(list);
+    return bytes;
+  }
 
 
   @override
   Widget build(BuildContext context) {
-
-    final Future<List<String>> getItem = Future<List<String>>.delayed(
-      const Duration(milliseconds: 10),
-          () => Provider.of<SerialSet>(context, listen: false).serial,
-    );
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Serial App"),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.read<SerialSet>().listPort(),
+        onPressed: () => setState(() {
+          print("object");
+        }),
         child: const Icon(Icons.refresh),
       ),
       body: Center(
         child: Column(
-          children: [
-            FutureBuilder(
-                future: getItem,
-                builder: (BuildContext context, AsyncSnapshot<List<String>> snapshot){
-                  List<Widget> item;
-                  if(snapshot.hasData){
-                    item = <Widget>[
-                      DropdownButton<String>(
-                          value: context.watch<SerialSet>().serialNow,
-                          items: context.watch<SerialSet>().serial.map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            context.read<SerialSet>().setPort(value!);
-                          }),
-                      DropdownButton<String>(
-                          value: context.watch<SerialSet>().baudRate,
-                          items: context.watch<SerialSet>().baudOption.map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            context.read<SerialSet>().setBaud(value!);
-                          }),
-                    ];
-                  }
-                  else if(snapshot.hasError){
-                    item = <Widget>[
-                      const Icon(
-                        Icons.error_outline,
-                        color: Colors.red,
-                        size: 60,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: Text('Error: ${snapshot.error}'),
-                      ),
-                    ];
-                  }
-                  else{
-                    item = const <Widget>[
-                      SizedBox(
-                        width: 50,
-                        height: 50,
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 16),
-                        child: Text('Awaiting result...'),
-                      )
-                    ];
-                  }
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: item,
-                    ),
-                  );
-                }),
-            const SerialPortNow(),
+          children: const[
+            Text("Haaa")
           ],
         ),
       ),

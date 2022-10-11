@@ -130,16 +130,20 @@ class _RefreshPageState extends State<RefreshPage> {
       print("Init state X");
       if(Provider.of<SerialSet>(context, listen: false).serialNow.isNotEmpty){
         SerialPort port = SerialPort(Provider.of<SerialSet>(context, listen: false).serialNow);
-
-        port.openReadWrite();
         var config = SerialPortConfig();
         config.baudRate = int.parse(Provider.of<SerialSet>(context, listen: false).baudRate);
         port.config = config;
-
         try{
+          port.openReadWrite();
           SerialPortReader reader = SerialPortReader(port);
           reader.stream.listen((data) {
-            print('received : ${String.fromCharCodes(data)}');
+            print('received : $data');
+          });
+          Stream<String> upcomingData = reader.stream.map((data){
+            return String.fromCharCodes(data);
+          });
+          upcomingData.listen((data) {
+            print("Read data: $data");
           });
         }on SerialPortError catch (err, _){
           if(port.isOpen){
@@ -148,14 +152,15 @@ class _RefreshPageState extends State<RefreshPage> {
           }
         }
       }
+
     });
   }
 
-  // Uint8List _stringToUint8List(String s) {
-  //   List<int> list = s.codeUnits;
-  //   Uint8List bytes = Uint8List.fromList(list);
-  //   return bytes;
-  // }
+  Uint8List _stringToUint8List(String s) {
+    List<int> list = s.codeUnits;
+    Uint8List bytes = Uint8List.fromList(list);
+    return bytes;
+  }
 
 
   @override
